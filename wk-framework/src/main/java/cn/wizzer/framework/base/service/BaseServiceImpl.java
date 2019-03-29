@@ -825,6 +825,19 @@ public class BaseServiceImpl<T> extends EntityService<T> implements BaseService<
     }
 
     /**
+     * 自定义查询,并返回当前实体类对象
+     *
+     * @param sql
+     * @return
+     */
+    public List<T> listEntity(Sql sql) {
+        sql.setEntity(getEntity());
+        sql.setCallback(Sqls.callback.entities());
+        this.dao().execute(sql);
+        return sql.getList(getEntityClass());
+    }
+
+    /**
      * 自定义sql获取map key-value
      *
      * @param sql
@@ -915,6 +928,66 @@ public class BaseServiceImpl<T> extends EntityService<T> implements BaseService<
         sql.setCallback(Sqls.callback.records());
         this.dao().execute(sql);
         return new Pagination(pageNumber, pageSize, pager.getRecordCount(), sql.getList(Record.class));
+    }
+
+    /**
+     * 分页查询
+     *
+     * @param pageNumber
+     * @param sql
+     * @return
+     */
+    public Pagination listPageMap(Integer pageNumber, Sql sql) {
+        return listPageMap(pageNumber, DEFAULT_PAGE_NUMBER, sql);
+    }
+
+    /**
+     * 分页查询(sql)
+     *
+     * @param pageNumber
+     * @param pageSize
+     * @param sql
+     * @return
+     */
+    public Pagination listPageMap(Integer pageNumber, int pageSize, Sql sql) {
+        pageNumber = getPageNumber(pageNumber);
+        pageSize = getPageSize(pageSize);
+        Pager pager = this.dao().createPager(pageNumber, pageSize);
+        pager.setRecordCount((int) Daos.queryCount(this.dao(), sql));// 记录数需手动设置
+        sql.setPager(pager);
+        sql.setCallback(Sqls.callback.maps());
+        this.dao().execute(sql);
+        return new Pagination(pageNumber, pageSize, pager.getRecordCount(), sql.getList(Map.class));
+    }
+
+    /**
+     * @param pageNumber
+     * @param sql        查询语句
+     * @param countSql   统计语句
+     * @return
+     */
+    public Pagination listPageMap(Integer pageNumber, Sql sql, Sql countSql) {
+        return listPageMap(pageNumber, DEFAULT_PAGE_NUMBER, sql, countSql);
+    }
+
+    /**
+     * @param pageNumber
+     * @param pageSize
+     * @param sql        查询语句
+     * @param countSql   统计语句
+     * @return
+     */
+    public Pagination listPageMap(Integer pageNumber, int pageSize, Sql sql, Sql countSql) {
+        pageNumber = getPageNumber(pageNumber);
+        pageSize = getPageSize(pageSize);
+        Pager pager = this.dao().createPager(pageNumber, pageSize);
+        countSql.setCallback(Sqls.callback.integer());
+        this.dao().execute(countSql);
+        pager.setRecordCount(countSql.getInt());// 记录数需手动设置
+        sql.setPager(pager);
+        sql.setCallback(Sqls.callback.maps());
+        this.dao().execute(sql);
+        return new Pagination(pageNumber, pageSize, pager.getRecordCount(), sql.getList(Map.class));
     }
 
     /**
